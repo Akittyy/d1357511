@@ -1,53 +1,35 @@
-import org.junit.*;
+name: junit
 
-public class StackTest {
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
-    @Test
-    public void testPushAndPopInteger() {
-        MyStack<Integer> stack = new MyStack<>();
-        stack.push(10);
-        stack.push(20);
-        stack.push(30);
+jobs:
+  test:
+    runs-on: ubuntu-latest
 
-        Assert.assertEquals(Integer.valueOf(30), stack.pop());
-        Assert.assertEquals(Integer.valueOf(20), stack.pop());
-        Assert.assertEquals(Integer.valueOf(10), stack.pop());
-        Assert.assertTrue(stack.isEmpty());
-    }
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    @Test
-    public void testPushAndPopString() {
-        MyStack<String> stack = new MyStack<>();
-        stack.push("Hello");
-        stack.push("World");
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
 
-        Assert.assertEquals("World", stack.pop());
-        Assert.assertEquals("Hello", stack.pop());
-        Assert.assertTrue(stack.isEmpty());
-    }
+      - name: Download JUnit and Run Tests
+        run: |
+          # 建立 lib 目錄並下載 JUnit 5 Console 版本
+          mkdir -p libs
+          curl -L -o libs/junit-platform-console-standalone.jar \
+            https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.10.2/junit-platform-console-standalone-1.10.2.jar
 
-    @Test
-    public void testSize() {
-        MyStack<Integer> intStack = new MyStack<>();
-        Assert.assertEquals(0, intStack.size());
-        intStack.push(1);
-        intStack.push(2);
-        Assert.assertEquals(2, intStack.size());
-        intStack.pop();
-        Assert.assertEquals(1, intStack.size());
-    }
+          # 編譯所有 .java 檔案
+          javac -cp "libs/junit-platform-console-standalone.jar:." *.java
 
-    @Test
-    public void testStackWithObjects() {
-        MyStack<Person> personStack = new MyStack<>();
-        Person alice = new Person("Alice", 25);
-        Person bob = new Person("Bob", 30);
-
-        personStack.push(alice);
-        personStack.push(bob);
-
-        Assert.assertEquals(bob, personStack.pop());
-        Assert.assertEquals(alice, personStack.pop());
-        Assert.assertTrue(personStack.isEmpty());
-    }
-}
+          # 執行所有測試
+          java -jar libs/junit-platform-console-standalone.jar \
+            -cp "libs/junit-platform-console-standalone.jar:." --scan-classpath
